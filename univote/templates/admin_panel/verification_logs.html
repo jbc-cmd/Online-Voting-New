@@ -1,0 +1,87 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Verification Logs | Univote Admin{% endblock %}
+{% block page_title %}Verification Logs{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'exports:verification_csv' %}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-download me-1"></i>Export CSV
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card-panel mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-12 col-md-4">
+      <label class="form-label fw-semibold">Filter by Election</label>
+      <select name="election" class="form-select">
+        <option value="">All Elections</option>
+        {% for election in elections %}
+        <option value="{{ election.pk }}" {% if election_filter == election.pk|stringformat:"s" %}selected{% endif %}>
+          {{ election.title }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-4">
+      <label class="form-label fw-semibold">Filter by Status</label>
+      <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="{% url 'audit:verification_logs' %}" class="btn btn-outline-secondary">Clear</a>
+    </div>
+  </form>
+</div>
+
+<div class="card-panel">
+  <div class="panel-header mb-3">
+    <h5 class="panel-title"><i class="bi bi-shield-exclamation me-2 text-warning"></i>Verification Logs</h5>
+    <span class="badge bg-warning-soft text-warning">{{ logs.count }} records</span>
+  </div>
+  {% if logs %}
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Date & Time</th>
+          <th>Election</th>
+          <th>Student ID (Attempted)</th>
+          <th>Email (Attempted)</th>
+          <th>Status</th>
+          <th>Reason</th>
+          <th>IP Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td><small>{{ log.created_at|date:"M d, Y H:i" }}</small></td>
+          <td><small>{{ log.election.title|default:"—"|truncatechars:30 }}</small></td>
+          <td><code>{{ log.attempted_student_id_number }}</code></td>
+          <td><small>{{ log.attempted_email }}</small></td>
+          <td>
+            {% if log.status == 'success' %}
+              <span class="badge bg-success-soft text-success">{{ log.get_status_display }}</span>
+            {% elif log.status == 'duplicate_attempt' %}
+              <span class="badge bg-danger">{{ log.get_status_display }}</span>
+            {% else %}
+              <span class="badge bg-warning-soft text-warning">{{ log.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td><small class="text-muted">{{ log.reason|truncatechars:40 }}</small></td>
+          <td><small class="text-muted font-monospace">{{ log.ip_address|default:"—" }}</small></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="empty-state"><i class="bi bi-shield-check"></i><p>No verification logs found.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Candidates: {{ election.title }} | Univote Admin{% endblock %}
+{% block page_title %}Manage Candidates — {{ election.title }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Add Candidate Form -->
+  <div class="col-12 col-lg-4">
+    <div class="card-panel sticky-top" style="top:80px;">
+      <h5 class="panel-title mb-4"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Add Candidate</h5>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add" />
+        <div class="mb-3">
+          <label class="form-label fw-semibold required-label">Position</label>
+          <select name="position_pk" class="form-select" required>
+            <option value="">Select position...</option>
+            {% for position in positions %}
+            <option value="{{ position.pk }}">{{ position.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold required-label">Full Name</label>
+          <input type="text" name="name" class="form-control" placeholder="Candidate full name" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Party List / Ticket</label>
+          <input type="text" name="partylist" class="form-control" placeholder="Optional party list" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Department</label>
+          <select name="department" class="form-select">
+            <option value="">None</option>
+            {% for dept in departments %}
+            <option value="{{ dept.pk }}">{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Platform / Description</label>
+          <textarea name="platform" class="form-control" rows="2" placeholder="Brief platform or bio..."></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Photo (optional)</label>
+          <input type="file" name="photo" class="form-control" accept="image/*" />
+        </div>
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-person-plus-fill me-1"></i> Add Candidate
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Candidates by Position -->
+  <div class="col-12 col-lg-8">
+    {% for position in positions %}
+    <div class="card-panel mb-4">
+      <div class="panel-header mb-3">
+        <div>
+          <h5 class="panel-title mb-0">{{ position.title }}</h5>
+          <small class="text-muted">
+            Max {{ position.max_choices }} vote(s) &bull;
+            {% if position.is_required %}Required{% else %}Optional{% endif %}
+          </small>
+        </div>
+        <span class="badge bg-primary-soft text-primary">{{ position.candidates.count }} candidate(s)</span>
+      </div>
+
+      {% if position.candidates.all %}
+        <div class="row g-3">
+          {% for candidate in position.candidates.all %}
+          <div class="col-12 col-sm-6">
+            <div class="candidate-admin-card">
+              <div class="candidate-photo-sm">
+                {% if candidate.photo %}
+                  <img src="{{ candidate.photo.url }}" alt="{{ candidate.name }}" />
+                {% else %}
+                  <div class="candidate-photo-placeholder">{{ candidate.name|slice:":1"|upper }}</div>
+                {% endif %}
+              </div>
+              <div class="candidate-admin-info">
+                <div class="fw-semibold">{{ candidate.name }}</div>
+                {% if candidate.partylist %}
+                <small class="text-primary">{{ candidate.partylist }}</small>
+                {% endif %}
+                {% if candidate.department %}
+                <small class="text-muted d-block">{{ candidate.department.code }}</small>
+                {% endif %}
+              </div>
+              <form method="post" class="ms-auto" onsubmit="return confirm('Delete this candidate?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="candidate_pk" value="{{ candidate.pk }}" />
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-muted text-center py-2">
+          <i class="bi bi-person-x me-1"></i> No candidates added for this position.
+        </div>
+      {% endif %}
+    </div>
+    {% empty %}
+      <div class="card-panel">
+        <div class="empty-state">
+          <i class="bi bi-list-check"></i>
+          <p>No positions found. <a href="{% url 'elections:manage_positions' election.pk %}">Add positions first.</a></p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

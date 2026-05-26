@@ -1,0 +1,105 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Students | Univote Admin{% endblock %}
+{% block page_title %}Student Management{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'students:student_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-person-plus-fill me-1"></i>Add Student</a>
+<a href="{% url 'students:student_import' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-upload me-1"></i>Import</a>
+{% endblock %}
+
+{% block content %}
+<!-- Search & Filter -->
+<div class="card-panel mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-12 col-md-4">
+      <label class="form-label fw-semibold">Search</label>
+      <input type="text" name="search" class="form-control" placeholder="ID, name, or email..." value="{{ search }}" />
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label fw-semibold">Department</label>
+      <select name="department" class="form-select">
+        <option value="">All Departments</option>
+        {% for dept in departments %}
+        <option value="{{ dept.pk }}" {% if dept_filter == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label fw-semibold">Program</label>
+      <select name="program" class="form-select">
+        <option value="">All Programs</option>
+        {% for prog in programs %}
+        <option value="{{ prog.pk }}" {% if program_filter == prog.pk|stringformat:"s" %}selected{% endif %}>{{ prog.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label fw-semibold">Status</label>
+      <select name="status" class="form-select">
+        <option value="">All Status</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-grow-1">Filter</button>
+      <a href="{% url 'students:student_list' %}" class="btn btn-outline-secondary">Clear</a>
+    </div>
+  </form>
+</div>
+
+<!-- Student Table -->
+<div class="card-panel">
+  <div class="panel-header mb-3">
+    <h5 class="panel-title"><i class="bi bi-people-fill me-2 text-primary"></i>Students</h5>
+    <span class="badge bg-primary-soft text-primary">{{ students.count }} records</span>
+  </div>
+  {% if students %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Student ID</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Program</th>
+          <th>Year / Section</th>
+          <th>Status</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+        <tr>
+          <td><code class="text-primary">{{ student.student_id_number }}</code></td>
+          <td class="fw-semibold">{{ student.full_name }}</td>
+          <td><small>{{ student.official_school_email }}</small></td>
+          <td>{{ student.department.code|default:"—" }}</td>
+          <td>{{ student.program.code|default:"—" }}</td>
+          <td>{{ student.year_level|default:"—" }}-{{ student.section|default:"—" }}</td>
+          <td>
+            <span class="badge {% if student.status == 'active' %}bg-success{% elif student.status == 'inactive' %}bg-secondary{% else %}bg-warning{% endif %}">
+              {{ student.get_status_display }}
+            </span>
+          </td>
+          <td class="text-center">
+            <div class="btn-group btn-group-sm">
+              <a href="{% url 'students:student_edit' student.pk %}" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'students:student_delete' student.pk %}" class="btn btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="empty-state">
+      <i class="bi bi-people"></i>
+      <p>No students found. Try adjusting your filters or import students.</p>
+      <a href="{% url 'students:student_import' %}" class="btn btn-primary">Import Students</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

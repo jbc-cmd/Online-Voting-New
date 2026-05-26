@@ -1,0 +1,55 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Organizations | Univote Admin{% endblock %}
+{% block page_title %}Organizations{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-4">
+    <div class="card-panel">
+      <h5 class="panel-title mb-4"><i class="bi bi-plus-circle-fill me-2 text-primary"></i>Add Organization</h5>
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="add" />
+        <div class="mb-3">
+          <label class="form-label fw-semibold required-label">Organization Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Computer Society" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="Brief description..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg me-1"></i>Add Organization</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-12 col-lg-8">
+    <div class="card-panel">
+      <div class="panel-header mb-3">
+        <h5 class="panel-title"><i class="bi bi-diagram-3-fill me-2 text-primary"></i>Organizations ({{ organizations.count }})</h5>
+      </div>
+      {% if organizations %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>Name</th><th>Description</th><th>Members</th><th></th></tr></thead>
+          <tbody>
+            {% for org in organizations %}
+            <tr>
+              <td class="fw-semibold">{{ org.name }}</td>
+              <td><small class="text-muted">{{ org.description|truncatechars:60 }}</small></td>
+              <td>{{ org.students.count }}</td>
+              <td class="text-end">
+                <form method="post" class="d-inline" onsubmit="return confirm('Delete {{ org.name }}?');">
+                  {% csrf_token %}<input type="hidden" name="action" value="delete" /><input type="hidden" name="pk" value="{{ org.pk }}" />
+                  <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state"><i class="bi bi-diagram-3"></i><p>No organizations added yet.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

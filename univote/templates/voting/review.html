@@ -1,0 +1,94 @@
+{% extends 'base/voting_base.html' %}
+{% block title %}Review Your Vote — {{ election.title }} | Univote{% endblock %}
+
+{% block content %}
+<div class="voting-card">
+  <div class="voting-election-header">
+    <div class="election-type-badge">{{ election.get_election_type_display }}</div>
+    <h1 class="voting-election-title">{{ election.title }}</h1>
+  </div>
+
+  <!-- Step Indicator -->
+  <div class="voting-steps">
+    <div class="step done"><div class="step-dot"><i class="bi bi-check-lg"></i></div><div class="step-label">Verify</div></div>
+    <div class="step-line done"></div>
+    <div class="step done"><div class="step-dot"><i class="bi bi-check-lg"></i></div><div class="step-label">OTP</div></div>
+    <div class="step-line done"></div>
+    <div class="step done"><div class="step-dot"><i class="bi bi-check-lg"></i></div><div class="step-label">Vote</div></div>
+    <div class="step-line done"></div>
+    <div class="step active"><div class="step-dot">4</div><div class="step-label">Submit</div></div>
+  </div>
+
+  <div class="voting-form-section">
+    <h2 class="section-title">
+      <i class="bi bi-eye-fill me-2 text-primary"></i>Review Your Selections
+    </h2>
+    <p class="text-muted mb-4">
+      Please carefully review your selections below. Once submitted, your vote <strong>cannot be changed</strong>.
+    </p>
+
+    <div class="review-warning">
+      <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>
+      <strong>Final check:</strong> Your ballot is anonymous. Your name will not be linked to your vote choices.
+    </div>
+
+    <!-- Review Items -->
+    <div class="review-list mt-4">
+      {% for item in review_items %}
+      <div class="review-item">
+        <div class="review-position-name">{{ item.position.title }}</div>
+        <div class="review-choice">
+          {% if item.is_abstain %}
+            <span class="review-abstain"><i class="bi bi-dash-circle me-1"></i>Abstain</span>
+          {% elif item.candidates %}
+            {% for candidate in item.candidates %}
+            <div class="review-candidate">
+              <div class="review-candidate-avatar">{{ candidate.name|slice:":1"|upper }}</div>
+              <div>
+                <div class="fw-semibold">{{ candidate.name }}</div>
+                {% if candidate.partylist %}
+                <small class="text-muted">{{ candidate.partylist }}</small>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <span class="text-muted"><i class="bi bi-x-circle me-1"></i>{{ item.choice }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="review-actions mt-4">
+      <form method="post" action="{% url 'voting:submit' slug=election.slug %}" id="submitForm">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-lg w-100 voting-submit-btn mb-3" id="finalSubmitBtn">
+          <i class="bi bi-check-circle-fill me-2"></i>Submit My Vote
+        </button>
+      </form>
+      <a href="{% url 'voting:ballot' slug=election.slug %}" class="btn btn-outline-secondary w-100">
+        <i class="bi bi-arrow-left me-2"></i>Go Back & Change Selections
+      </a>
+    </div>
+
+    <div class="mt-4 text-center">
+      <small class="text-muted">
+        <i class="bi bi-shield-lock-fill me-1 text-success"></i>
+        Your vote is encrypted, anonymous, and stored securely.
+      </small>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('submitForm').addEventListener('submit', function() {
+  const btn = document.getElementById('finalSubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting your vote...';
+});
+</script>
+{% endblock %}

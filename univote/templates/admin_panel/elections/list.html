@@ -1,0 +1,184 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Elections | Univote Admin Panel{% endblock %}
+{% block page_title %}Elections{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'elections:election_create' %}" class="btn btn-primary btn-sm">
+  <i class="bi bi-plus-lg me-1"></i> New Election
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card-panel">
+  <div class="panel-header mb-3">
+    <h5 class="panel-title"><i class="bi bi-card-checklist me-2 text-primary"></i>All Elections</h5>
+    <span class="badge bg-primary-soft text-primary">{{ elections.count }} total</span>
+  </div>
+
+  {% if elections %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Voting Toggle</th>
+          <th>Turnout</th>
+          <th>Voting Link</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for election in elections %}
+        <tr>
+          <td>
+            <div class="fw-semibold">{{ election.title }}</div>
+            <small class="text-muted">Created {{ election.created_at|date:"M d, Y" }}</small>
+          </td>
+          <td><span class="badge badge-type">{{ election.get_election_type_display }}</span></td>
+          <td>
+            <span class="status-badge status-{{ election.status }}">
+              {{ election.get_status_display }}
+            </span>
+          </td>
+          <td>
+            <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+              <input class="form-check-input election-toggle" type="checkbox"
+                data-election-id="{{ election.pk }}"
+                id="toggle_{{ election.pk }}"
+                {% if election.is_active %}checked{% endif %}
+                {% if election.status == 'closed' or election.status == 'archived' %}disabled{% endif %} />
+              <label class="form-check-label small fw-semibold toggle-label" for="toggle_{{ election.pk }}">
+                {% if election.is_active %}OPEN{% else %}CLOSED{% endif %}
+              </label>
+            </div>
+          </td>
+          <td>
+            {% if election.total_eligible_voters > 0 %}
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-grow-1" style="height:6px;min-width:60px;">
+                <div class="progress-bar bg-success" style="width:{{ election.voter_turnout_percentage }}%;"></div>
+              </div>
+              <small class="fw-semibold">{{ election.voter_turnout_percentage }}%</small>
+            </div>
+            <small class="text-muted">{{ election.total_votes_cast }}/{{ election.total_eligible_voters }}</small>
+            {% else %}
+            <small class="text-muted">No voters set</small>
+            {% endif %}
+          </td>
+          <td>
+            {% if election.is_active %}
+            <div class="d-flex align-items-center gap-1">
+              <input type="text" class="form-control form-control-sm voting-link-input"
+                value="{{ election.voting_url }}" readonly />
+              <button class="btn btn-sm btn-outline-secondary copy-link-btn"
+                data-link="{{ election.voting_url }}" title="Copy link">
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            {% else %}
+            <small class="text-muted">Activate to generate link</small>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <div class="btn-group btn-group-sm">
+              <a href="{% url 'elections:election_edit' election.pk %}" class="btn btn-outline-primary" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'elections:manage_positions' election.pk %}" class="btn btn-outline-secondary" title="Positions">
+                <i class="bi bi-list-check"></i>
+              </a>
+              <a href="{% url 'elections:manage_candidates' election.pk %}" class="btn btn-outline-secondary" title="Candidates">
+                <i class="bi bi-person-badge"></i>
+              </a>
+              <a href="{% url 'elections:election_results' election.pk %}" class="btn btn-outline-success" title="Results">
+                <i class="bi bi-graph-up"></i>
+              </a>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" title="Export">
+                  <i class="bi bi-download"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="{% url 'exports:results_csv' election.pk %}"><i class="bi bi-filetype-csv me-2"></i>CSV</a></li>
+                  <li><a class="dropdown-item" href="{% url 'exports:results_excel' election.pk %}"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Excel</a></li>
+                  <li><a class="dropdown-item" href="{% url 'exports:results_pdf' election.pk %}"><i class="bi bi-file-earmark-pdf me-2"></i>PDF</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{% url 'exports:turnout_csv' election.pk %}"><i class="bi bi-people me-2"></i>Turnout CSV</a></li>
+                </ul>
+              </div>
+              <a href="{% url 'elections:election_delete' election.pk %}" class="btn btn-outline-danger" title="Delete">
+                <i class="bi bi-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="empty-state">
+      <i class="bi bi-card-checklist"></i>
+      <p>No elections created yet. Get started by creating your first election.</p>
+      <a href="{% url 'elections:election_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Create First Election
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// AJAX Election Toggle
+document.querySelectorAll('.election-toggle').forEach(function(toggle) {
+  toggle.addEventListener('change', function() {
+    const electionId = this.dataset.electionId;
+    const isActive = this.checked;
+    const label = this.nextElementSibling;
+    fetch(`/admin-panel/elections/${electionId}/toggle/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+      body: JSON.stringify({ is_active: isActive }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        label.textContent = data.is_active ? 'OPEN' : 'CLOSED';
+        showToast(data.is_active ? 'Voting is now OPEN' : 'Voting is now CLOSED', data.is_active ? 'success' : 'warning');
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        this.checked = !isActive;
+        showToast(data.error || 'Failed to toggle', 'danger');
+      }
+    })
+    .catch(() => { this.checked = !isActive; });
+  });
+});
+
+// Copy link button
+document.querySelectorAll('.copy-link-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const link = this.dataset.link;
+    navigator.clipboard.writeText(link).then(() => {
+      this.innerHTML = '<i class="bi bi-clipboard-check text-success"></i>';
+      showToast('Voting link copied!', 'success');
+      setTimeout(() => { this.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 2000);
+    });
+  });
+});
+
+function showToast(msg, type) {
+  const toast = document.createElement('div');
+  toast.className = `toast-notification toast-${type}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+</script>
+{% endblock %}

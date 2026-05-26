@@ -1,0 +1,85 @@
+{% extends 'base/voting_base.html' %}
+{% block title %}OTP Verification — {{ election.title }} | Univote{% endblock %}
+
+{% block content %}
+<div class="voting-card">
+  <div class="voting-election-header">
+    <div class="election-type-badge">{{ election.get_election_type_display }}</div>
+    <h1 class="voting-election-title">{{ election.title }}</h1>
+  </div>
+
+  <!-- Step Indicator -->
+  <div class="voting-steps">
+    <div class="step done"><div class="step-dot"><i class="bi bi-check-lg"></i></div><div class="step-label">Verify</div></div>
+    <div class="step-line done"></div>
+    <div class="step active"><div class="step-dot">2</div><div class="step-label">OTP</div></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="step-dot">3</div><div class="step-label">Vote</div></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="step-dot">4</div><div class="step-label">Submit</div></div>
+  </div>
+
+  <div class="voting-form-section">
+    <div class="otp-icon-wrap">
+      <i class="bi bi-envelope-paper-fill"></i>
+    </div>
+    <h2 class="section-title text-center">Check Your Email</h2>
+    <p class="text-muted text-center mb-4">
+      We sent a <strong>6-digit OTP</strong> to:<br />
+      <strong class="text-primary">{{ masked_email }}</strong>
+    </p>
+    <p class="text-muted text-center small mb-4">
+      <i class="bi bi-clock me-1"></i>
+      This OTP expires in 10 minutes. Do not share it with anyone.
+    </p>
+
+    <form method="post" action="{% url 'voting:verify_otp' slug=election.slug %}" id="otpForm">
+      {% csrf_token %}
+      <div class="mb-4">
+        <label class="form-label fw-semibold text-center d-block">Enter Your OTP</label>
+        <div class="otp-input-group">
+          <input type="text" id="otp" name="otp"
+            class="form-control form-control-lg text-center otp-input voting-input"
+            placeholder="000000"
+            maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
+            required autocomplete="one-time-code" />
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-success btn-lg w-100 voting-submit-btn" id="verifyBtn">
+        <i class="bi bi-shield-check-fill me-2"></i>Verify OTP & Access Ballot
+      </button>
+    </form>
+
+    <div class="mt-4 text-center">
+      <p class="text-muted small">Did not receive the OTP?</p>
+      <a href="{% url 'voting:resend_otp' slug=election.slug %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-clockwise me-1"></i>Resend OTP
+      </a>
+      <br /><br />
+      <a href="{% url 'voting:credential_form' slug=election.slug %}" class="text-muted small">
+        <i class="bi bi-arrow-left me-1"></i>Back to Credentials
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-format OTP input and submit on 6 digits
+const otpInput = document.getElementById('otp');
+otpInput.addEventListener('input', function() {
+  this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+  if (this.value.length === 6) {
+    document.getElementById('verifyBtn').classList.add('btn-pulse');
+  }
+});
+document.getElementById('otpForm').addEventListener('submit', function() {
+  const btn = document.getElementById('verifyBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+});
+otpInput.focus();
+</script>
+{% endblock %}

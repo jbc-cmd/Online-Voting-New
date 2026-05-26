@@ -1,0 +1,20 @@
+{% extends 'base/voting_base.html' %}
+{% block title %}Voting Closed | Univote{% endblock %}
+{% block content %}
+<div class="voting-card text-center">
+  <div class="status-icon closed-icon">
+    <i class="bi bi-lock-fill"></i>
+  </div>
+  <h1 class="status-title">Voting is Currently Closed</h1>
+  <p class="text-muted mb-4">
+    {% if election %}
+    <strong>{{ election.title }}</strong> is not currently accepting votes.
+    {% endif %}
+    This election may not have started yet, may be paused, or has been closed by the administrator.
+  </p>
+  <div class="status-notice">
+    <i class="bi bi-info-circle-fill me-2 text-primary"></i>
+    Please check with your election administrator for voting schedule information.
+  </div>
+</div>
+{% endblock %}

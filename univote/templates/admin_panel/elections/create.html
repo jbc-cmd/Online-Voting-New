@@ -1,0 +1,126 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Create Election | Univote Admin Panel{% endblock %}
+{% block page_title %}Create New Election{% endblock %}
+
+{% block content %}
+<form method="post" action="{% url 'elections:election_create' %}">
+  {% csrf_token %}
+  <div class="row g-4">
+    <div class="col-12 col-lg-7">
+      <div class="card-panel">
+        <h5 class="panel-title mb-4"><i class="bi bi-card-checklist me-2 text-primary"></i>Election Details</h5>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold required-label">Election Title</label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. USC Election 2026" required />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea name="description" class="form-control" rows="3" placeholder="Brief description of this election..."></textarea>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required-label">Election Type</label>
+            <select name="election_type" class="form-select" required>
+              <option value="">Select type...</option>
+              {% for val, label in election_types %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Status</label>
+            <select name="status" class="form-select">
+              {% for val, label in status_choices %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Start Date & Time</label>
+            <input type="datetime-local" name="starts_at" class="form-control" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">End Date & Time</label>
+            <input type="datetime-local" name="ends_at" class="form-control" />
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Results Visibility</label>
+            <select name="results_visibility" class="form-select">
+              <option value="admin_only">Admin Only</option>
+              <option value="public_after_close">Public After Close</option>
+            </select>
+          </div>
+          <div class="col-md-6 d-flex align-items-end pb-2">
+            <div class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" name="allow_abstain" id="allowAbstain" />
+              <label class="form-check-label fw-semibold" for="allowAbstain">Allow Abstain</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+      <div class="card-panel">
+        <h5 class="panel-title mb-4"><i class="bi bi-people-fill me-2 text-info"></i>Eligible Voters</h5>
+        <p class="text-muted small mb-3">Select who can vote in this election. Leave empty for USC (all students).</p>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Departments</label>
+          <select name="departments" class="form-select" multiple size="4">
+            {% for dept in departments %}
+            <option value="{{ dept.pk }}">{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+          <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Programs</label>
+          <select name="programs" class="form-select" multiple size="4">
+            {% for prog in programs %}
+            <option value="{{ prog.pk }}">{{ prog.name }} ({{ prog.department.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Classes</label>
+          <select name="classes" class="form-select" multiple size="4">
+            {% for cls in classes %}
+            <option value="{{ cls.pk }}">{{ cls.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Organizations</label>
+          <select name="organizations" class="form-select" multiple size="3">
+            {% for org in organizations %}
+            <option value="{{ org.pk }}">{{ org.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="d-flex gap-3">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i> Create Election
+        </button>
+        <a href="{% url 'elections:election_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

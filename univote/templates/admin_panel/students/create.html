@@ -1,0 +1,79 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Add Student | Univote Admin{% endblock %}
+{% block page_title %}Add Student{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="card-panel">
+      <h5 class="panel-title mb-4"><i class="bi bi-person-plus-fill me-2 text-primary"></i>New Student</h5>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required-label">Student ID Number</label>
+            <input type="text" name="student_id_number" class="form-control" placeholder="e.g. 2024-0001" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required-label">Official School Email</label>
+            <input type="email" name="official_school_email" class="form-control" placeholder="student@school.edu" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required-label">First Name</label>
+            <input type="text" name="first_name" class="form-control" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required-label">Last Name</label>
+            <input type="text" name="last_name" class="form-control" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Department</label>
+            <select name="department" class="form-select">
+              <option value="">Select department...</option>
+              {% for dept in departments %}<option value="{{ dept.pk }}">{{ dept.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Program</label>
+            <select name="program" class="form-select">
+              <option value="">Select program...</option>
+              {% for prog in programs %}<option value="{{ prog.pk }}">{{ prog.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Year Level</label>
+            <select name="year_level" class="form-select">
+              <option value="">Select...</option>
+              <option value="1">1st Year</option><option value="2">2nd Year</option>
+              <option value="3">3rd Year</option><option value="4">4th Year</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Section</label>
+            <input type="text" name="section" class="form-control" placeholder="e.g. A" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Status</label>
+            <select name="status" class="form-select">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Class Group</label>
+            <select name="class_group" class="form-select">
+              <option value="">None</option>
+              {% for cls in classes %}<option value="{{ cls.pk }}">{{ cls.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <div class="d-flex gap-3 mt-2">
+              <button type="submit" class="btn btn-primary">Add Student</button>
+              <a href="{% url 'students:student_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

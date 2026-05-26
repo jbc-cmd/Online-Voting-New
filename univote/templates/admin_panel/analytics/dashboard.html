@@ -1,0 +1,200 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Analytics | Univote Admin{% endblock %}
+{% block page_title %}Analytics & Reporting{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Election Filter -->
+<div class="card-panel mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-12 col-md-5">
+      <label class="form-label fw-semibold">Select Election</label>
+      <select name="election" class="form-select" onchange="this.form.submit()">
+        {% for election in elections %}
+        <option value="{{ election.pk }}" {% if selected_election.pk == election.pk %}selected{% endif %}>
+          {{ election.title }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+</div>
+
+{% if selected_election and stats %}
+<!-- KPIs -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-xl-2">
+    <div class="kpi-card"><div class="kpi-value">{{ stats.total_eligible }}</div><div class="kpi-label">Eligible</div></div>
+  </div>
+  <div class="col-6 col-xl-2">
+    <div class="kpi-card"><div class="kpi-value text-success">{{ stats.total_voted }}</div><div class="kpi-label">Voted</div></div>
+  </div>
+  <div class="col-6 col-xl-2">
+    <div class="kpi-card"><div class="kpi-value text-danger">{{ stats.not_voted }}</div><div class="kpi-label">Not Voted</div></div>
+  </div>
+  <div class="col-6 col-xl-2">
+    <div class="kpi-card"><div class="kpi-value text-primary">{{ stats.turnout }}%</div><div class="kpi-label">Turnout</div></div>
+  </div>
+  <div class="col-6 col-xl-2">
+    <div class="kpi-card"><div class="kpi-value text-warning">{{ stats.duplicate_count }}</div><div class="kpi-label">Duplicates Blocked</div></div>
+  </div>
+  <div class="col-6 col-xl-2">
+    <div class="kpi-card"><div class="kpi-value text-info">{{ stats.otp_success }}</div><div class="kpi-label">OTP Verified</div></div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+  <div class="col-12 col-md-6">
+    <div class="card-panel">
+      <h5 class="panel-title mb-3"><i class="bi bi-pie-chart-fill me-2 text-primary"></i>Voter Turnout</h5>
+      <canvas id="turnoutPie" height="250"></canvas>
+    </div>
+  </div>
+  <div class="col-12 col-md-6">
+    <div class="card-panel">
+      <h5 class="panel-title mb-3"><i class="bi bi-bar-chart-fill me-2 text-success"></i>Turnout by Department</h5>
+      <canvas id="deptChart" height="250"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- OTP Stats -->
+<div class="row g-4 mb-4">
+  <div class="col-12 col-md-6">
+    <div class="card-panel">
+      <h5 class="panel-title mb-3"><i class="bi bi-envelope-check-fill me-2 text-info"></i>OTP Statistics</h5>
+      <div class="row text-center">
+        <div class="col-4">
+          <div class="fw-bold fs-4 text-primary">{{ stats.otp_total }}</div>
+          <small class="text-muted">Total OTPs Sent</small>
+        </div>
+        <div class="col-4">
+          <div class="fw-bold fs-4 text-success">{{ stats.otp_success }}</div>
+          <small class="text-muted">Verified</small>
+        </div>
+        <div class="col-4">
+          <div class="fw-bold fs-4 text-danger">{{ stats.otp_failure }}</div>
+          <small class="text-muted">Failed</small>
+        </div>
+      </div>
+      {% if stats.otp_total > 0 %}
+      <div class="mt-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="small fw-semibold text-success">OTP Success Rate</span>
+          <span class="small fw-bold">{% widthratio stats.otp_success stats.otp_total 100 %}%</span>
+        </div>
+        <div class="progress" style="height:8px;">
+          <div class="progress-bar bg-success" style="width:{% widthratio stats.otp_success stats.otp_total 100 %}%;"></div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6">
+    <div class="card-panel">
+      <h5 class="panel-title mb-3"><i class="bi bi-shield-exclamation me-2 text-warning"></i>Security Events</h5>
+      <div class="row text-center">
+        <div class="col-6">
+          <div class="fw-bold fs-4 text-danger">{{ stats.duplicate_count }}</div>
+          <small class="text-muted">Duplicate Votes Blocked</small>
+        </div>
+        <div class="col-6">
+          <div class="fw-bold fs-4 text-warning">{{ stats.failed_count }}</div>
+          <small class="text-muted">Failed Verifications</small>
+        </div>
+      </div>
+      <div class="mt-3 text-center">
+        <a href="{% url 'audit:verification_logs' %}?election={{ selected_election.pk }}" class="btn btn-sm btn-outline-warning">
+          <i class="bi bi-eye me-1"></i> View Verification Logs
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Results per Position -->
+{% for pos_stat in stats.position_stats %}
+<div class="card-panel mb-3">
+  <h5 class="panel-title mb-3"><i class="bi bi-person-badge me-2 text-primary"></i>{{ pos_stat.position.title }}</h5>
+  <div class="row g-2">
+    {% for cand_data in pos_stat.candidates %}
+    <div class="col-12 col-md-6">
+      <div class="d-flex align-items-center gap-3 p-2">
+        <div class="candidate-vote-avatar-sm">{{ cand_data.candidate.name|slice:":1"|upper }}</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="fw-semibold">{{ cand_data.candidate.name }}</span>
+            <span class="fw-bold text-primary">{{ cand_data.votes }}</span>
+          </div>
+          {% if stats.total_voted > 0 %}
+          <div class="progress" style="height:6px;">
+            <div class="progress-bar bg-primary" style="width:{% widthratio cand_data.votes stats.total_voted 100 %}%;"></div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% if pos_stat.abstain_count > 0 %}
+    <div class="col-12 col-md-6">
+      <div class="d-flex align-items-center gap-3 p-2">
+        <div class="candidate-vote-avatar-sm bg-secondary">—</div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="fw-semibold text-muted">Abstain</span>
+            <span class="fw-bold text-secondary">{{ pos_stat.abstain_count }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+
+{% else %}
+  <div class="card-panel">
+    <div class="empty-state">
+      <i class="bi bi-graph-up"></i>
+      <p>No elections available for analytics.</p>
+      <a href="{% url 'elections:election_create' %}" class="btn btn-primary">Create Election</a>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if selected_election and stats %}
+<script>
+// Turnout pie
+new Chart(document.getElementById('turnoutPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Voted', 'Not Voted'],
+    datasets: [{ data: [{{ stats.total_voted }}, {{ stats.not_voted }}], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }]
+  },
+  options: { cutout: '65%', plugins: { legend: { position: 'bottom' } } }
+});
+
+// Department chart - load from API
+fetch('/admin-panel/analytics/{{ selected_election.pk }}/data/?type=turnout_by_department')
+  .then(r => r.json())
+  .then(data => {
+    new Chart(document.getElementById('deptChart'), {
+      type: 'bar',
+      data: data,
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+  });
+</script>
+{% endif %}
+{% endblock %}

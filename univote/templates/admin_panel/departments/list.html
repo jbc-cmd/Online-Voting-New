@@ -1,0 +1,60 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Departments | Univote Admin{% endblock %}
+{% block page_title %}Departments{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-4">
+    <div class="card-panel">
+      <h5 class="panel-title mb-4"><i class="bi bi-plus-circle-fill me-2 text-primary"></i>Add Department</h5>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add" />
+        <div class="mb-3">
+          <label class="form-label fw-semibold required-label">Department Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. College of Computer Studies" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold required-label">Department Code</label>
+          <input type="text" name="code" class="form-control" placeholder="e.g. CCS" required />
+        </div>
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg me-1"></i>Add Department</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-12 col-lg-8">
+    <div class="card-panel">
+      <div class="panel-header mb-3">
+        <h5 class="panel-title"><i class="bi bi-building-fill me-2 text-primary"></i>Departments ({{ departments.count }})</h5>
+      </div>
+      {% if departments %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>Code</th><th>Name</th><th>Programs</th><th>Students</th><th></th></tr></thead>
+          <tbody>
+            {% for dept in departments %}
+            <tr>
+              <td><span class="badge bg-primary-soft text-primary fw-bold fs-6">{{ dept.code }}</span></td>
+              <td class="fw-semibold">{{ dept.name }}</td>
+              <td>{{ dept.programs.count }}</td>
+              <td>{{ dept.students.count }}</td>
+              <td class="text-end">
+                <form method="post" class="d-inline" onsubmit="return confirm('Delete {{ dept.name }}?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete" />
+                  <input type="hidden" name="pk" value="{{ dept.pk }}" />
+                  <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state"><i class="bi bi-building"></i><p>No departments added yet.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

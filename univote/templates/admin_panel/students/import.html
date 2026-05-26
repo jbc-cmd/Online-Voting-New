@@ -1,0 +1,49 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Import Students | Univote Admin{% endblock %}
+{% block page_title %}Import Students{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-6">
+    <div class="card-panel">
+      <h5 class="panel-title mb-4"><i class="bi bi-upload me-2 text-primary"></i>Upload Student File</h5>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Select CSV or Excel File</label>
+          <input type="file" name="file" class="form-control" accept=".csv,.xlsx,.xls" required />
+          <small class="text-muted mt-1 d-block">Supported formats: .csv, .xlsx, .xls</small>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-cloud-upload-fill me-2"></i>Upload and Import
+        </button>
+      </form>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card-panel">
+      <h5 class="panel-title mb-4"><i class="bi bi-info-circle-fill me-2 text-info"></i>Required Columns</h5>
+      <table class="table table-sm table-bordered">
+        <thead class="table-dark">
+          <tr><th>Column Name</th><th>Required</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>student_id_number</code></td><td><span class="badge bg-danger">Required</span></td><td>2024-0001</td></tr>
+          <tr><td><code>official_school_email</code></td><td><span class="badge bg-danger">Required</span></td><td>student@school.edu</td></tr>
+          <tr><td><code>first_name</code></td><td><span class="badge bg-danger">Required</span></td><td>Juan</td></tr>
+          <tr><td><code>last_name</code></td><td><span class="badge bg-danger">Required</span></td><td>Dela Cruz</td></tr>
+          <tr><td><code>department_code</code></td><td><span class="badge bg-secondary">Optional</span></td><td>CCS</td></tr>
+          <tr><td><code>program_code</code></td><td><span class="badge bg-secondary">Optional</span></td><td>BSIT</td></tr>
+          <tr><td><code>year_level</code></td><td><span class="badge bg-secondary">Optional</span></td><td>2</td></tr>
+          <tr><td><code>section</code></td><td><span class="badge bg-secondary">Optional</span></td><td>A</td></tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-info mt-3">
+        <i class="bi bi-lightbulb-fill me-2"></i>
+        <strong>Tip:</strong> If a student ID already exists, the record will be updated. New student IDs will be created.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

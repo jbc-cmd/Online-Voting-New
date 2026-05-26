@@ -1,0 +1,172 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Results: {{ election.title }} | Univote Admin{% endblock %}
+{% block page_title %}Election Results — {{ election.title }}{% endblock %}
+
+{% block topbar_actions %}
+<div class="btn-group btn-group-sm">
+  <a href="{% url 'exports:results_csv' election.pk %}" class="btn btn-outline-secondary"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+  <a href="{% url 'exports:results_excel' election.pk %}" class="btn btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Excel</a>
+  <a href="{% url 'exports:results_pdf' election.pk %}" class="btn btn-outline-danger"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Summary KPIs -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="kpi-card">
+      <div class="kpi-value">{{ total_eligible }}</div>
+      <div class="kpi-label">Eligible Voters</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-card">
+      <div class="kpi-value text-success">{{ total_voted }}</div>
+      <div class="kpi-label">Votes Cast</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-card">
+      <div class="kpi-value text-warning">{{ total_eligible|add:"-"|add:total_voted }}</div>
+      <div class="kpi-label">Not Voted</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-card">
+      <div class="kpi-value text-primary">{{ turnout }}%</div>
+      <div class="kpi-label">Voter Turnout</div>
+    </div>
+  </div>
+</div>
+
+<!-- Turnout Chart -->
+<div class="row g-4 mb-4">
+  <div class="col-12 col-md-5">
+    <div class="card-panel">
+      <h5 class="panel-title mb-3"><i class="bi bi-pie-chart-fill me-2 text-primary"></i>Turnout Overview</h5>
+      <canvas id="turnoutChart" height="250"></canvas>
+    </div>
+  </div>
+  <div class="col-12 col-md-7">
+    <div class="card-panel">
+      <h5 class="panel-title mb-3"><i class="bi bi-graph-up-arrow me-2 text-success"></i>Turnout Progress</h5>
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="fw-semibold">Overall Turnout</span>
+          <span class="fw-bold text-success">{{ turnout }}%</span>
+        </div>
+        <div class="progress" style="height:20px;border-radius:10px;">
+          <div class="progress-bar bg-success" role="progressbar"
+            style="width:{{ turnout }}%;"
+            aria-valuenow="{{ turnout }}" aria-valuemin="0" aria-valuemax="100">
+            {{ turnout }}%
+          </div>
+        </div>
+      </div>
+      <div class="row text-center mt-3">
+        <div class="col-4">
+          <div class="fw-bold text-success fs-4">{{ total_voted }}</div>
+          <small class="text-muted">Voted</small>
+        </div>
+        <div class="col-4">
+          <div class="fw-bold text-danger fs-4">{{ total_eligible|add:"-"|add:total_voted }}</div>
+          <small class="text-muted">Not Voted</small>
+        </div>
+        <div class="col-4">
+          <div class="fw-bold text-primary fs-4">{{ total_eligible }}</div>
+          <small class="text-muted">Total Eligible</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Results per Position -->
+{% for item in results %}
+<div class="card-panel mb-4">
+  <h5 class="panel-title mb-4">
+    <i class="bi bi-person-badge-fill me-2 text-primary"></i>{{ item.position.title }}
+    <small class="text-muted ms-2">(Max {{ item.position.max_choices }} vote(s))</small>
+  </h5>
+  <div class="row g-3">
+    {% for cand_data in item.candidates %}
+    <div class="col-12 col-md-6">
+      <div class="result-candidate-card {% if forloop.first %}winner-card{% endif %}">
+        {% if forloop.first %}
+        <div class="winner-badge"><i class="bi bi-trophy-fill"></i> Leading</div>
+        {% endif %}
+        <div class="result-candidate-header">
+          <div class="candidate-vote-avatar">{{ cand_data.candidate.name|slice:":1"|upper }}</div>
+          <div>
+            <div class="fw-bold">{{ cand_data.candidate.name }}</div>
+            {% if cand_data.candidate.partylist %}
+            <small class="text-primary">{{ cand_data.candidate.partylist }}</small>
+            {% endif %}
+          </div>
+          <div class="vote-count-badge ms-auto">{{ cand_data.votes }}</div>
+        </div>
+        {% with total=total_voted %}
+        {% if total > 0 %}
+        <div class="mt-2">
+          <div class="progress" style="height:8px;border-radius:4px;">
+            <div class="progress-bar {% if forloop.first %}bg-success{% else %}bg-primary{% endif %}"
+              style="width:{% widthratio cand_data.votes total 100 %}%;"></div>
+          </div>
+          <small class="text-muted">{% widthratio cand_data.votes total 100 %}% of votes cast</small>
+        </div>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+    {% endfor %}
+    {% if item.abstain_count > 0 %}
+    <div class="col-12 col-md-6">
+      <div class="result-candidate-card abstain-card">
+        <div class="result-candidate-header">
+          <div class="candidate-vote-avatar bg-secondary text-white">—</div>
+          <div><div class="fw-bold text-muted">Abstain</div></div>
+          <div class="vote-count-badge ms-auto bg-secondary-soft text-secondary">{{ item.abstain_count }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+  <div class="card-panel">
+    <div class="empty-state">
+      <i class="bi bi-bar-chart"></i>
+      <p>No positions or votes recorded yet.</p>
+    </div>
+  </div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const turnoutCtx = document.getElementById('turnoutChart');
+if (turnoutCtx) {
+  new Chart(turnoutCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Voted', 'Not Voted'],
+      datasets: [{
+        data: [{{ total_voted }}, {{ total_eligible }} - {{ total_voted }}],
+        backgroundColor: ['#22c55e', '#ef4444'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

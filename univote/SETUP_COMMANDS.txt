@@ -1,0 +1,32 @@
+# Copy .env.example to .env first, then fill in your database password.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 1 — Install dependencies (after activating your virtual environment)
+# ─────────────────────────────────────────────────────────────────────────────
+# pip install -r requirements.txt
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 2 — Make and run migrations for each app
+# ─────────────────────────────────────────────────────────────────────────────
+# python manage.py makemigrations accounts students elections voting audit
+# python manage.py migrate
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 3 — Create cache table (for rate limiting)
+# ─────────────────────────────────────────────────────────────────────────────
+# python manage.py createcachetable
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 4 — Collect static files
+# ─────────────────────────────────────────────────────────────────────────────
+# python manage.py collectstatic --noinput
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 5 — Load seed data
+# ─────────────────────────────────────────────────────────────────────────────
+# python seed/seed_data.py
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 6 — Run server
+# ─────────────────────────────────────────────────────────────────────────────
+# python manage.py runserver

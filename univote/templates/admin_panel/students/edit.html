@@ -1,0 +1,79 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Edit Student | Univote Admin{% endblock %}
+{% block page_title %}Edit Student{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="card-panel">
+      <h5 class="panel-title mb-4"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit Student — {{ student.full_name }}</h5>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required-label">Student ID Number</label>
+            <input type="text" name="student_id_number" class="form-control" value="{{ student.student_id_number }}" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required-label">Official School Email</label>
+            <input type="email" name="official_school_email" class="form-control" value="{{ student.official_school_email }}" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required-label">First Name</label>
+            <input type="text" name="first_name" class="form-control" value="{{ student.first_name }}" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required-label">Last Name</label>
+            <input type="text" name="last_name" class="form-control" value="{{ student.last_name }}" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Department</label>
+            <select name="department" class="form-select">
+              <option value="">None</option>
+              {% for dept in departments %}<option value="{{ dept.pk }}" {% if student.department == dept %}selected{% endif %}>{{ dept.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Program</label>
+            <select name="program" class="form-select">
+              <option value="">None</option>
+              {% for prog in programs %}<option value="{{ prog.pk }}" {% if student.program == prog %}selected{% endif %}>{{ prog.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Year Level</label>
+            <select name="year_level" class="form-select">
+              <option value="">Select...</option>
+              {% for y in "1234" %}<option value="{{ y }}" {% if student.year_level == y %}selected{% endif %}>{{ y }}{% if y == "1" %}st{% elif y == "2" %}nd{% elif y == "3" %}rd{% else %}th{% endif %} Year</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Section</label>
+            <input type="text" name="section" class="form-control" value="{{ student.section }}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Status</label>
+            <select name="status" class="form-select">
+              <option value="active" {% if student.status == 'active' %}selected{% endif %}>Active</option>
+              <option value="inactive" {% if student.status == 'inactive' %}selected{% endif %}>Inactive</option>
+              <option value="graduated" {% if student.status == 'graduated' %}selected{% endif %}>Graduated</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Class Group</label>
+            <select name="class_group" class="form-select">
+              <option value="">None</option>
+              {% for cls in classes %}<option value="{{ cls.pk }}" {% if student.class_group == cls %}selected{% endif %}>{{ cls.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <div class="d-flex gap-3 mt-2">
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+              <a href="{% url 'students:student_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

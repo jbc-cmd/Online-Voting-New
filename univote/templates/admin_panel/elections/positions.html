@@ -1,0 +1,108 @@
+{% extends 'base/admin_base.html' %}
+{% block title %}Positions: {{ election.title }} | Univote Admin{% endblock %}
+{% block page_title %}Manage Positions — {{ election.title }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Add Position Form -->
+  <div class="col-12 col-lg-4">
+    <div class="card-panel sticky-top" style="top:80px;">
+      <h5 class="panel-title mb-4"><i class="bi bi-plus-circle-fill me-2 text-primary"></i>Add Position</h5>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add" />
+        <div class="mb-3">
+          <label class="form-label fw-semibold required-label">Position Title</label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. President" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="Optional description..."></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Max Choices (votes allowed)</label>
+          <input type="number" name="max_choices" class="form-control" value="1" min="1" max="10" />
+          <small class="text-muted">1 = radio buttons, 2+ = checkboxes</small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Display Order</label>
+          <input type="number" name="display_order" class="form-control" value="{{ positions.count }}" min="0" />
+        </div>
+        <div class="mb-3">
+          <div class="form-check form-switch">
+            <input type="checkbox" class="form-check-input" name="is_required" id="isRequired" checked />
+            <label class="form-check-label fw-semibold" for="isRequired">Required Position</label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-plus-lg me-1"></i> Add Position
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Positions List -->
+  <div class="col-12 col-lg-8">
+    <div class="card-panel">
+      <div class="panel-header mb-3">
+        <h5 class="panel-title"><i class="bi bi-list-check me-2 text-primary"></i>Positions ({{ positions.count }})</h5>
+        <a href="{% url 'elections:manage_candidates' election.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-person-badge me-1"></i>Manage Candidates
+        </a>
+      </div>
+
+      {% if positions %}
+        {% for position in positions %}
+        <div class="position-card mb-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-bold fs-6">{{ position.title }}</div>
+              {% if position.description %}
+              <small class="text-muted">{{ position.description }}</small>
+              {% endif %}
+              <div class="mt-1">
+                <span class="badge {% if position.max_choices > 1 %}bg-primary-soft text-primary{% else %}bg-secondary-soft text-secondary{% endif %} me-1">
+                  {{ position.max_choices }} vote{% if position.max_choices > 1 %}s{% endif %}
+                </span>
+                <span class="badge {% if position.is_required %}bg-danger-soft text-danger{% else %}bg-success-soft text-success{% endif %} me-1">
+                  {% if position.is_required %}Required{% else %}Optional{% endif %}
+                </span>
+                <span class="badge bg-light text-muted">Order: {{ position.display_order }}</span>
+              </div>
+            </div>
+            <form method="post" onsubmit="return confirm('Delete this position and all its candidates?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete" />
+              <input type="hidden" name="position_pk" value="{{ position.pk }}" />
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
+
+          {% if position.candidates.all %}
+          <div class="mt-2 pt-2 border-top">
+            <small class="text-muted fw-semibold">CANDIDATES ({{ position.candidates.count }}):</small>
+            <div class="d-flex flex-wrap gap-1 mt-1">
+              {% for candidate in position.candidates.all %}
+              <span class="badge bg-light text-dark border">{{ candidate.name }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          {% else %}
+          <div class="mt-2 pt-2 border-top">
+            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>No candidates added yet.</small>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <i class="bi bi-list-check"></i>
+          <p>No positions added yet. Add your first position on the left.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

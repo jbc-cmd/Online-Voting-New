@@ -1,0 +1,211 @@
+{% extends 'base/voting_base.html' %}
+{% block title %}Ballot — {{ election.title }} | Univote{% endblock %}
+
+{% block content %}
+<div class="voting-card">
+  <div class="voting-election-header">
+    <div class="election-type-badge">{{ election.get_election_type_display }}</div>
+    <h1 class="voting-election-title">{{ election.title }}</h1>
+    {% if election.description %}
+    <p class="voting-election-desc">{{ election.description }}</p>
+    {% endif %}
+  </div>
+
+  <!-- Step Indicator -->
+  <div class="voting-steps">
+    <div class="step done"><div class="step-dot"><i class="bi bi-check-lg"></i></div><div class="step-label">Verify</div></div>
+    <div class="step-line done"></div>
+    <div class="step done"><div class="step-dot"><i class="bi bi-check-lg"></i></div><div class="step-label">OTP</div></div>
+    <div class="step-line done"></div>
+    <div class="step active"><div class="step-dot">3</div><div class="step-label">Vote</div></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="step-dot">4</div><div class="step-label">Submit</div></div>
+  </div>
+
+  <!-- Ballot Instructions -->
+  <div class="ballot-instructions">
+    <i class="bi bi-info-circle-fill me-2 text-primary"></i>
+    <strong>Instructions:</strong>
+    <ul class="mt-2 mb-0">
+      <li>Vote for each position carefully. Required positions must have a selection.</li>
+      <li>Positions allowing <strong>1 vote</strong> use radio buttons. Positions allowing <strong>multiple</strong> use checkboxes.</li>
+      {% if election.allow_abstain %}<li>You may choose <strong>Abstain</strong> for any position.</li>{% endif %}
+      <li>You will review your selections before final submission.</li>
+    </ul>
+  </div>
+
+  <form method="post" action="{% url 'voting:review' slug=election.slug %}" id="ballotForm">
+    {% csrf_token %}
+
+    {% for position in positions %}
+    <div class="position-block" id="position-{{ position.pk }}">
+      <div class="position-header">
+        <div class="position-title-row">
+          <h3 class="position-name">{{ position.title }}</h3>
+          {% if position.is_required %}
+          <span class="badge bg-danger-soft text-danger required-badge">Required</span>
+          {% else %}
+          <span class="badge bg-secondary-soft text-secondary">Optional</span>
+          {% endif %}
+        </div>
+        {% if position.description %}
+        <p class="position-desc">{{ position.description }}</p>
+        {% endif %}
+        <div class="vote-limit-notice">
+          {% if position.max_choices == 1 %}
+            <i class="bi bi-circle-fill me-1 text-primary" style="font-size:0.7rem;"></i>
+            Select <strong>1</strong> candidate
+          {% else %}
+            <i class="bi bi-check-square-fill me-1 text-primary" style="font-size:0.7rem;"></i>
+            Select up to <strong>{{ position.max_choices }}</strong> candidate(s)
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="candidates-grid">
+        {% for candidate in position.candidates.all %}
+        <label class="candidate-card-label" for="cand_{{ position.pk }}_{{ candidate.pk }}">
+          <div class="candidate-card-inner">
+            <div class="candidate-photo-wrap">
+              {% if candidate.photo %}
+              <img src="{{ candidate.photo.url }}" alt="{{ candidate.name }}" class="candidate-photo" />
+              {% else %}
+              <div class="candidate-photo-placeholder-voting">
+                {{ candidate.name|slice:":1"|upper }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="candidate-info">
+              <div class="candidate-name-voting">{{ candidate.name }}</div>
+              {% if candidate.partylist %}
+              <div class="candidate-party">{{ candidate.partylist }}</div>
+              {% endif %}
+              {% if candidate.platform %}
+              <div class="candidate-platform">{{ candidate.platform|truncatechars:80 }}</div>
+              {% endif %}
+              {% if candidate.department %}
+              <div class="candidate-dept-tag">{{ candidate.department.code }}</div>
+              {% endif %}
+            </div>
+            <div class="candidate-select-wrap">
+              {% if position.max_choices == 1 %}
+              <input type="radio" id="cand_{{ position.pk }}_{{ candidate.pk }}"
+                name="position_{{ position.pk }}"
+                value="{{ candidate.pk }}"
+                class="candidate-radio"
+                {% if position.is_required %}required{% endif %} />
+              {% else %}
+              <input type="checkbox" id="cand_{{ position.pk }}_{{ candidate.pk }}"
+                name="position_{{ position.pk }}"
+                value="{{ candidate.pk }}"
+                class="candidate-checkbox"
+                data-position="{{ position.pk }}"
+                data-max="{{ position.max_choices }}" />
+              {% endif %}
+            </div>
+          </div>
+        </label>
+        {% endfor %}
+
+        {% if election.allow_abstain %}
+        <label class="candidate-card-label abstain-label" for="abstain_{{ position.pk }}">
+          <div class="candidate-card-inner">
+            <div class="candidate-photo-wrap">
+              <div class="candidate-photo-placeholder-voting bg-secondary text-white">—</div>
+            </div>
+            <div class="candidate-info">
+              <div class="candidate-name-voting text-muted">Abstain</div>
+              <div class="candidate-platform">I choose not to vote for this position.</div>
+            </div>
+            <div class="candidate-select-wrap">
+              {% if position.max_choices == 1 %}
+              <input type="radio" id="abstain_{{ position.pk }}"
+                name="position_{{ position.pk }}"
+                value="abstain"
+                class="candidate-radio" />
+              {% else %}
+              <input type="checkbox" id="abstain_{{ position.pk }}"
+                name="position_{{ position.pk }}"
+                value="abstain"
+                class="candidate-checkbox abstain-check"
+                data-position="{{ position.pk }}"
+                data-max="{{ position.max_choices }}" />
+              {% endif %}
+            </div>
+          </div>
+        </label>
+        {% endif %}
+      </div>
+
+      <div class="selection-feedback" id="feedback_{{ position.pk }}"></div>
+    </div>
+    {% empty %}
+    <div class="text-center py-4 text-muted">
+      <i class="bi bi-exclamation-circle fs-2 mb-2 d-block"></i>
+      No positions have been set up for this election yet.
+    </div>
+    {% endfor %}
+
+    <div class="ballot-submit-section">
+      <button type="submit" class="btn btn-success btn-lg voting-submit-btn" id="reviewBtn">
+        <i class="bi bi-eye-fill me-2"></i>Review My Selections
+      </button>
+      <p class="text-muted small mt-3 mb-0">
+        <i class="bi bi-lock-fill me-1"></i>
+        Your vote is anonymous. Once submitted, it cannot be changed.
+      </p>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Checkbox max limit enforcement
+document.querySelectorAll('.candidate-checkbox').forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    const posId = this.dataset.position;
+    const maxChoices = parseInt(this.dataset.max);
+    const allChecked = document.querySelectorAll(
+      `.candidate-checkbox[data-position="${posId}"]:checked`
+    );
+    const feedback = document.getElementById(`feedback_${posId}`);
+    if (allChecked.length > maxChoices) {
+      this.checked = false;
+      feedback.textContent = `⚠️ You can only select up to ${maxChoices} candidate(s) for this position.`;
+      feedback.className = 'selection-feedback selection-error';
+    } else {
+      feedback.textContent = allChecked.length > 0 ? `✓ ${allChecked.length} of ${maxChoices} selected.` : '';
+      feedback.className = 'selection-feedback selection-ok';
+    }
+  });
+});
+
+// Candidate card visual selection
+document.querySelectorAll('.candidate-card-label').forEach(function(label) {
+  const input = label.querySelector('input');
+  if (!input) return;
+  input.addEventListener('change', function() {
+    if (this.type === 'radio') {
+      // Deselect all in group
+      const name = this.name;
+      document.querySelectorAll(`input[name="${name}"]`).forEach(function(r) {
+        r.closest('.candidate-card-label')?.classList.remove('selected');
+      });
+    }
+    if (this.checked) {
+      label.classList.add('selected');
+    } else {
+      label.classList.remove('selected');
+    }
+  });
+});
+
+// Form submit loading state
+document.getElementById('ballotForm').addEventListener('submit', function() {
+  const btn = document.getElementById('reviewBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading review...';
+});
+</script>
+{% endblock %}
