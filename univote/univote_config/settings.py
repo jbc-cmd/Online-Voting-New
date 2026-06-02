@@ -4,7 +4,6 @@ Univote Django Settings
 import os
 from pathlib import Path
 from decouple import config
-import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -66,26 +65,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'univote_config.wsgi.application'
 
-# Database - PostgreSQL
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='univote_db'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default='password'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
-}
+# Database - Turso / libSQL (or local PostgreSQL fallback)
+TURSO_DATABASE_URL = config('TURSO_DATABASE_URL', default=None)
+TURSO_AUTH_TOKEN = config('TURSO_AUTH_TOKEN', default=None)
 
-# Support DATABASE_URL environment variable on Render
-database_url = config('DATABASE_URL', default=None)
-if database_url:
-    DATABASES['default'] = dj_database_url.config(
-        default=database_url,
-        conn_max_age=600,
-        conn_health_checks=True
-    )
+if TURSO_DATABASE_URL:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django_libsql',
+            'NAME': TURSO_DATABASE_URL,
+            'AUTH_TOKEN': TURSO_AUTH_TOKEN,
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='univote_db'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default='password'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
+
 
 
 # Password validation

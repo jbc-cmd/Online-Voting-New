@@ -6,19 +6,13 @@ services:
     buildCommand: "chmod +x build.sh && ./build.sh"
     startCommand: "gunicorn univote_config.wsgi:application"
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: univote-db
-          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: "False"
       - key: PYTHON_VERSION
         value: "3.11.9"
-
-databases:
-  - name: univote-db
-    databaseName: univote_db
-    user: univote_user
-    plan: free
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
