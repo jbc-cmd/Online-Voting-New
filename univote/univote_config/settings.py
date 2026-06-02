@@ -4,12 +4,17 @@ Univote Django Settings
 import os
 from pathlib import Path
 from decouple import config
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-production')
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default=None)
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -32,6 +37,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -72,6 +78,16 @@ DATABASES = {
     }
 }
 
+# Support DATABASE_URL environment variable on Render
+database_url = config('DATABASE_URL', default=None)
+if database_url:
+    DATABASES['default'] = dj_database_url.config(
+        default=database_url,
+        conn_max_age=600,
+        conn_health_checks=True
+    )
+
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -89,6 +105,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Media files (candidate photos)
 MEDIA_URL = '/media/'
@@ -101,6 +118,11 @@ SESSION_COOKIE_AGE = 3600  # 1 hour
 SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SECURE = not DEBUG
+
+# CSRF Trusted Origins for Django 4.0+ in production
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000,http://127.0.0.1:8000').split(',')
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
 # Auth redirect
 LOGIN_URL = '/admin-panel/login/'
@@ -121,7 +143,7 @@ OTP_EXPIRY_MINUTES = config('OTP_EXPIRY_MINUTES', default=10, cast=int)
 OTP_MAX_ATTEMPTS = config('OTP_MAX_ATTEMPTS', default=5, cast=int)
 
 # Site URL (for generating voting links)
-SITE_URL = config('SITE_URL', default='http://localhost:8000')
+SITE_URL = config('SITE_URL', default=f"https://{RENDER_EXTERNAL_HOSTNAME}" if RENDER_EXTERNAL_HOSTNAME else 'http://localhost:8000')
 
 # Cache (using database cache for rate limiting)
 CACHES = {

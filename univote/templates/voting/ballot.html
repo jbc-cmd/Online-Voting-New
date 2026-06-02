@@ -27,7 +27,7 @@
     <i class="bi bi-info-circle-fill me-2 text-primary"></i>
     <strong>Instructions:</strong>
     <ul class="mt-2 mb-0">
-      <li>Vote for each position carefully. Required positions must have a selection.</li>
+      <li>Vote for each position carefully. You may leave positions blank if you choose to undervote.</li>
       <li>Positions allowing <strong>1 vote</strong> use radio buttons. Positions allowing <strong>multiple</strong> use checkboxes.</li>
       {% if election.allow_abstain %}<li>You may choose <strong>Abstain</strong> for any position.</li>{% endif %}
       <li>You will review your selections before final submission.</li>
@@ -42,11 +42,7 @@
       <div class="position-header">
         <div class="position-title-row">
           <h3 class="position-name">{{ position.title }}</h3>
-          {% if position.is_required %}
-          <span class="badge bg-danger-soft text-danger required-badge">Required</span>
-          {% else %}
           <span class="badge bg-secondary-soft text-secondary">Optional</span>
-          {% endif %}
         </div>
         {% if position.description %}
         <p class="position-desc">{{ position.description }}</p>
@@ -92,8 +88,7 @@
               <input type="radio" id="cand_{{ position.pk }}_{{ candidate.pk }}"
                 name="position_{{ position.pk }}"
                 value="{{ candidate.pk }}"
-                class="candidate-radio"
-                {% if position.is_required %}required{% endif %} />
+                class="candidate-radio" />
               {% else %}
               <input type="checkbox" id="cand_{{ position.pk }}_{{ candidate.pk }}"
                 name="position_{{ position.pk }}"
@@ -177,6 +172,27 @@ document.querySelectorAll('.candidate-checkbox').forEach(function(cb) {
     } else {
       feedback.textContent = allChecked.length > 0 ? `✓ ${allChecked.length} of ${maxChoices} selected.` : '';
       feedback.className = 'selection-feedback selection-ok';
+    }
+  });
+});
+
+// Allow optional single-choice positions to be cleared by clicking the selected radio again
+document.querySelectorAll('.candidate-radio').forEach(function(radio) {
+  radio.dataset.wasChecked = radio.checked ? 'true' : 'false';
+  radio.addEventListener('click', function() {
+    const wasChecked = this.dataset.wasChecked === 'true';
+    const group = document.querySelectorAll(`input[name="${this.name}"]`);
+
+    group.forEach(function(r) {
+      r.checked = false;
+      r.dataset.wasChecked = 'false';
+      r.closest('.candidate-card-label')?.classList.remove('selected');
+    });
+
+    if (!wasChecked) {
+      this.checked = true;
+      this.dataset.wasChecked = 'true';
+      this.closest('.candidate-card-label')?.classList.add('selected');
     }
   });
 });

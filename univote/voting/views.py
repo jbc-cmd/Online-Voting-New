@@ -35,7 +35,7 @@ def _get_verified_student(request, election):
 
 def credential_form(request, slug):
     """
-    Landing page. Student enters Student ID + official email.
+    Landing page. Student enters Student ID.
     """
     election = get_object_or_404(Election, slug=slug)
 
@@ -44,13 +44,12 @@ def credential_form(request, slug):
 
     if request.method == 'POST':
         student_id = request.POST.get('student_id_number', '').strip()
-        email = request.POST.get('official_school_email', '').strip().lower()
 
-        if not student_id or not email:
-            messages.error(request, 'Please fill in all fields.')
+        if not student_id:
+            messages.error(request, 'Please enter your Student ID.')
             return render(request, 'voting/credential_form.html', {'election': election})
 
-        result = verify_student_credentials(student_id, email, election, request)
+        result = verify_student_credentials(student_id, election, request)
 
         if result['error'] == 'election_closed':
             return render(request, 'voting/closed.html', {'election': election})
@@ -62,13 +61,12 @@ def credential_form(request, slug):
             return render(request, 'voting/not_eligible.html', {'election': election})
 
         if not result['success']:
-            messages.error(request, 'Student ID and email do not match any official record. Please check your credentials.')
+            messages.error(request, 'Student ID does not match any official record. Please check your credentials.')
             return render(request, 'voting/credential_form.html', {'election': election})
 
         # Store student pk in session for OTP step
         student = result['student']
         request.session[f'pending_student_{election.pk}'] = student.pk
-        request.session[f'pending_email_{election.pk}'] = email
         request.session.modified = True
 
         return redirect('voting:send_otp', slug=slug)
@@ -249,7 +247,7 @@ def submit_view(request, slug):
         return redirect('voting:ballot', slug=slug)
 
     selections = request.session.get(f'pending_ballot_{election.pk}')
-    if not selections:
+    if selections is None:
         messages.error(request, 'Your ballot data was lost. Please fill in your ballot again.')
         return redirect('voting:ballot', slug=slug)
 

@@ -30,17 +30,18 @@ def get_user_agent(request):
 
 # ─── Step 1: Verify student credentials ─────────────────────────────────────
 
-def verify_student_credentials(student_id_number: str, email: str, election: Election, request) -> dict:
+def verify_student_credentials(student_id_number: str, election: Election, request) -> dict:
     """
-    Check that the student_id_number + email match an official record.
+    Check that the student_id_number matches an official active student record.
     Returns {'success': bool, 'student': Student|None, 'error': str}
     """
     ip = get_ip(request)
     ua = get_user_agent(request)
+    attempted_email = ''
 
     # Check election is open
     if not election.is_voting_open():
-        log_verification(election, None, student_id_number, email, 'election_closed',
+        log_verification(election, None, student_id_number, attempted_email, 'election_closed',
                          'Election is not active', ip, ua)
         return {'success': False, 'student': None, 'error': 'election_closed'}
 
@@ -48,31 +49,32 @@ def verify_student_credentials(student_id_number: str, email: str, election: Ele
     try:
         student = Student.objects.get(
             student_id_number__iexact=student_id_number.strip(),
-            official_school_email__iexact=email.strip().lower(),
             status='active'
         )
     except Student.DoesNotExist:
-        log_verification(election, None, student_id_number, email, 'failed_not_found',
-                         'Student not found or credentials mismatch', ip, ua)
+        log_verification(election, None, student_id_number, attempted_email, 'failed_not_found',
+                         'Student not found', ip, ua)
         return {'success': False, 'student': None, 'error': 'invalid_credentials'}
+
+    attempted_email = student.official_school_email
 
     # Check eligibility
     if not is_student_eligible(student, election):
-        log_verification(election, student, student_id_number, email, 'failed_ineligible',
+        log_verification(election, student, student_id_number, attempted_email, 'failed_ineligible',
                          'Student not eligible for this election', ip, ua)
         return {'success': False, 'student': student, 'error': 'not_eligible'}
 
     # Check already voted
     participation = VoterParticipation.objects.filter(election=election, student=student).first()
     if participation and participation.has_voted:
-        log_verification(election, student, student_id_number, email, 'failed_already_voted',
+        log_verification(election, student, student_id_number, attempted_email, 'failed_already_voted',
                          'Student has already voted', ip, ua)
         return {'success': False, 'student': student, 'error': 'already_voted'}
 
     # Ensure participation record exists (eligible voter)
     VoterParticipation.objects.get_or_create(election=election, student=student)
 
-    log_verification(election, student, student_id_number, email, 'success',
+    log_verification(election, student, student_id_number, attempted_email, 'success',
                      'Credentials verified, OTP will be sent', ip, ua)
     return {'success': True, 'student': student, 'error': None}
 
@@ -294,10 +296,6 @@ def submit_ballot(student: Student, election: Election, selections: dict, reques
     for position in positions:
         pos_selection = selections.get(str(position.pk))
         if not pos_selection:
-            if position.is_required:
-                # Required position with no selection — should have been caught earlier
-                ballot.delete()
-                return {'success': False, 'error': 'missing_required_position'}
             continue
 
         if pos_selection == 'abstain' and election.allow_abstain:
@@ -338,8 +336,6 @@ def _validate_selections(selections: dict, positions, allow_abstain: bool) -> st
     """Validate selections dict against positions. Returns error string or None."""
     for position in positions:
         pos_selection = selections.get(str(position.pk))
-        if position.is_required and not pos_selection:
-            return f'required_position_missing:{position.pk}'
         if not pos_selection:
             continue
         if pos_selection == 'abstain':

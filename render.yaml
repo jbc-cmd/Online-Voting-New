@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: univote-web
+    env: python
+    rootDir: univote
+    buildCommand: "chmod +x build.sh && ./build.sh"
+    startCommand: "gunicorn univote_config.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: univote-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+
+databases:
+  - name: univote-db
+    databaseName: univote_db
+    user: univote_user
+    plan: free
