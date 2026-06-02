@@ -2,6 +2,10 @@
 # exit on error
 set -o errexit
 
+# Navigate to the script's directory
+cd "$(dirname "$0")"
+
+
 # Install dependencies
 pip install -r requirements.txt
 
